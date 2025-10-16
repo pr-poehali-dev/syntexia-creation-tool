@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useCallback } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -27,12 +26,21 @@ const SceneEditDialog = ({ scene, plotLine, open, onClose, onSave }: SceneEditDi
     }
   }, [scene]);
 
-  const handleSave = () => {
+  const autoSave = useCallback(() => {
     if (scene) {
       onSave(scene.id, { title, description, content });
-      onClose();
     }
-  };
+  }, [scene, title, description, content, onSave]);
+
+  useEffect(() => {
+    if (!scene) return;
+    
+    const timer = setTimeout(() => {
+      autoSave();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [title, description, content, autoSave, scene]);
 
   if (!scene || !plotLine) return null;
 
@@ -40,11 +48,14 @@ const SceneEditDialog = ({ scene, plotLine, open, onClose, onSave }: SceneEditDi
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#1E1E1E] border-gray-800 text-white">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <DialogTitle className="text-2xl">Редактирование сцены</DialogTitle>
-            <Badge className={`${plotLine.color} text-white`}>
-              {plotLine.name}
-            </Badge>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-2xl">Редактирование сцены</DialogTitle>
+              <Badge className={`${plotLine.color} text-white`}>
+                {plotLine.name}
+              </Badge>
+            </div>
+            <span className="text-xs text-gray-500">Автосохранение</span>
           </div>
         </DialogHeader>
 
@@ -85,15 +96,6 @@ const SceneEditDialog = ({ scene, plotLine, open, onClose, onSave }: SceneEditDi
             />
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="border-gray-700">
-            Отмена
-          </Button>
-          <Button onClick={handleSave} className="bg-purple-600 hover:bg-purple-700">
-            Сохранить
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

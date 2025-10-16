@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ExpandedSidebar from '@/components/ExpandedSidebar';
 import HomeView from '@/components/HomeView';
 import LibraryView from '@/components/LibraryView';
 import AssistantView from '@/components/AssistantView';
 import SettingsView from '@/components/SettingsView';
+import EditorView from '@/components/EditorView';
+import TrashView from '@/components/TrashView';
 import type { Project, PlotLine, Chapter, Scene } from '@/types/project';
 
 const Index = () => {
-  const [activeView, setActiveView] = useState<'home' | 'library' | 'assistant' | 'settings'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'library' | 'assistant' | 'settings' | 'editor' | 'trash'>('home');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isGridExpanded, setIsGridExpanded] = useState(false);
   
@@ -36,7 +38,7 @@ const Index = () => {
     { id: 's7', plotLineId: '5', chapterId: 'ch3', title: 'Внутренний конфликт', description: 'Герой сталкивается с личными демонами' },
   ]);
 
-  const projects: Project[] = [
+  const [projects, setProjects] = useState<Project[]>([
     {
       id: '1',
       title: 'Fantasy Novel Outline',
@@ -61,7 +63,21 @@ const Index = () => {
       progress: 100,
       color: 'from-amber-500 via-red-500 to-purple-500'
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+      setScenes(prev => prev.filter(s => !s.deletedAt || (now - s.deletedAt < thirtyDays)));
+      setChapters(prev => prev.filter(c => !c.deletedAt || (now - c.deletedAt < thirtyDays)));
+      setPlotLines(prev => prev.filter(p => !p.deletedAt || (now - p.deletedAt < thirtyDays)));
+      setProjects(prev => prev.filter(proj => !proj.deletedAt || (now - proj.deletedAt < thirtyDays)));
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const addChapter = () => {
     const newChapter: Chapter = {
@@ -94,17 +110,17 @@ const Index = () => {
   };
 
   const deleteScene = (sceneId: string) => {
-    setScenes(scenes.filter(s => s.id !== sceneId));
+    setScenes(scenes.map(s => s.id === sceneId ? { ...s, deletedAt: Date.now() } : s));
   };
 
   const deleteChapter = (chapterId: string) => {
-    setChapters(chapters.filter(c => c.id !== chapterId));
-    setScenes(scenes.filter(s => s.chapterId !== chapterId));
+    setChapters(chapters.map(c => c.id === chapterId ? { ...c, deletedAt: Date.now() } : c));
+    setScenes(scenes.map(s => s.chapterId === chapterId ? { ...s, deletedAt: Date.now() } : s));
   };
 
   const deletePlotLine = (plotLineId: string) => {
-    setPlotLines(plotLines.filter(p => p.id !== plotLineId));
-    setScenes(scenes.filter(s => s.plotLineId !== plotLineId));
+    setPlotLines(plotLines.map(p => p.id === plotLineId ? { ...p, deletedAt: Date.now() } : p));
+    setScenes(scenes.map(s => s.plotLineId === plotLineId ? { ...s, deletedAt: Date.now() } : s));
   };
 
   const updateScene = (sceneId: string, updates: Partial<Scene>) => {
@@ -118,11 +134,66 @@ const Index = () => {
     setActiveView('home');
   };
 
+  const getDeletedItems = () => {
+    return [
+      ...scenes.filter(s => s.deletedAt),
+      ...chapters.filter(c => c.deletedAt),
+      ...plotLines.filter(p => p.deletedAt),
+      ...projects.filter(p => p.deletedAt)
+    ];
+  };
+
+  const handleRestore = (item: any) => {
+    if ('plotLineId' in item && 'chapterId' in item) {
+      setScenes(scenes.map(s => s.id === item.id ? { ...s, deletedAt: undefined } : s));
+    } else if ('order' in item) {
+      setChapters(chapters.map(c => c.id === item.id ? { ...c, deletedAt: undefined } : c));
+    } else if ('color' in item && 'name' in item) {
+      setPlotLines(plotLines.map(p => p.id === item.id ? { ...p, deletedAt: undefined } : p));
+    } else if ('status' in item) {
+      setProjects(projects.map(p => p.id === item.id ? { ...p, deletedAt: undefined } : p));
+    }
+  };
+
+  const handlePermanentDelete = (item: any) => {
+    if ('plotLineId' in item && 'chapterId' in item) {
+      setScenes(scenes.filter(s => s.id !== item.id));
+    } else if ('order' in item) {
+      setChapters(chapters.filter(c => c.id !== item.id));
+    } else if ('color' in item && 'name' in item) {
+      setPlotLines(plotLines.filter(p => p.id !== item.id));
+    } else if ('status' in item) {
+      setProjects(projects.filter(p => p.id !== item.id));
+    }
+  };
+
+  const handleExtendStorage = (item: any) => {
+    const newDeletedAt = Date.now();
+    if ('plotLineId' in item && 'chapterId' in item) {
+      setScenes(scenes.map(s => s.id === item.id ? { ...s, deletedAt: newDeletedAt } : s));
+    } else if ('order' in item) {
+      setChapters(chapters.map(c => c.id === item.id ? { ...c, deletedAt: newDeletedAt } : c));
+    } else if ('color' in item && 'name' in item) {
+      setPlotLines(plotLines.map(p => p.id === item.id ? { ...p, deletedAt: newDeletedAt } : p));
+    } else if ('status' in item) {
+      setProjects(projects.map(p => p.id === item.id ? { ...p, deletedAt: newDeletedAt } : p));
+    }
+  };
+
+  const activeScenes = scenes.filter(s => !s.deletedAt);
+  const activeChapters = chapters.filter(c => !c.deletedAt);
+  const activePlotLines = plotLines.filter(p => !p.deletedAt);
+  const activeProjects = projects.filter(p => !p.deletedAt);
+
   return (
     <div className="min-h-screen bg-[#1E1E1E] text-white">
       <div className="flex">
         {!isGridExpanded && (
-          <Sidebar activeView={activeView} setActiveView={setActiveView} />
+          <Sidebar 
+            activeView={activeView} 
+            setActiveView={setActiveView}
+            hasSelectedProject={!!selectedProject}
+          />
         )}
 
         <div className={`flex-1 flex ${isGridExpanded ? 'flex-row' : 'flex-col'}`}>
@@ -133,13 +204,13 @@ const Index = () => {
           <main className="flex-1 overflow-auto">
             {activeView === 'home' && (
               <HomeView
-                projects={projects}
+                projects={activeProjects}
                 selectedProject={selectedProject}
                 setSelectedProject={setSelectedProject}
                 isGridExpanded={isGridExpanded}
-                plotLines={plotLines}
-                chapters={chapters}
-                scenes={scenes}
+                plotLines={activePlotLines}
+                chapters={activeChapters}
+                scenes={activeScenes}
                 setIsGridExpanded={setIsGridExpanded}
                 addChapter={addChapter}
                 addPlotLine={addPlotLine}
@@ -153,14 +224,34 @@ const Index = () => {
 
             {activeView === 'library' && (
               <LibraryView
-                projects={projects}
+                projects={activeProjects}
                 onSelectProject={handleSelectProject}
               />
             )}
 
-            {activeView === 'assistant' && <AssistantView />}
+            {activeView === 'editor' && (
+              <EditorView
+                selectedProject={selectedProject}
+                chapters={activeChapters}
+                scenes={activeScenes}
+                updateScene={updateScene}
+              />
+            )}
+
+            {activeView === 'assistant' && (
+              <AssistantView selectedProject={selectedProject} />
+            )}
 
             {activeView === 'settings' && <SettingsView />}
+
+            {activeView === 'trash' && (
+              <TrashView
+                deletedItems={getDeletedItems()}
+                onRestore={handleRestore}
+                onPermanentDelete={handlePermanentDelete}
+                onExtendStorage={handleExtendStorage}
+              />
+            )}
           </main>
         </div>
       </div>

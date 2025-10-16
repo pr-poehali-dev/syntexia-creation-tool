@@ -5,12 +5,14 @@ export interface Project {
   status: 'in-progress' | 'drafting' | 'completed';
   progress: number;
   color: string;
+  deletedAt?: number;
 }
 
 export interface PlotLine {
   id: string;
   name: string;
   color: string;
+  deletedAt?: number;
 }
 
 export interface Scene {
@@ -20,12 +22,14 @@ export interface Scene {
   title: string;
   description: string;
   content?: string;
+  deletedAt?: number;
 }
 
 export interface Chapter {
   id: string;
   name: string;
   order: number;
+  deletedAt?: number;
 }
 
 export const getStatusInfo = (status: Project['status']) => {
