@@ -19,6 +19,7 @@ export interface Scene {
   chapterId: string;
   title: string;
   description: string;
+  content?: string;
 }
 
 export interface Chapter {

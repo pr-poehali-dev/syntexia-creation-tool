@@ -22,6 +22,7 @@ interface HomeViewProps {
   deleteScene: (sceneId: string) => void;
   deleteChapter: (chapterId: string) => void;
   deletePlotLine: (plotLineId: string) => void;
+  updateScene: (sceneId: string, updates: Partial<Scene>) => void;
 }
 
 const HomeView = ({
@@ -38,7 +39,8 @@ const HomeView = ({
   addScene,
   deleteScene,
   deleteChapter,
-  deletePlotLine
+  deletePlotLine,
+  updateScene
 }: HomeViewProps) => {
   return (
     <div className="p-8 animate-fade-in">
@@ -150,6 +152,7 @@ const HomeView = ({
               deleteScene={deleteScene}
               deleteChapter={deleteChapter}
               deletePlotLine={deletePlotLine}
+              updateScene={updateScene}
             />
           </div>
         )}

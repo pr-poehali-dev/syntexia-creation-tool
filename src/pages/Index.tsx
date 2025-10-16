@@ -107,6 +107,12 @@ const Index = () => {
     setScenes(scenes.filter(s => s.plotLineId !== plotLineId));
   };
 
+  const updateScene = (sceneId: string, updates: Partial<Scene>) => {
+    setScenes(scenes.map(scene => 
+      scene.id === sceneId ? { ...scene, ...updates } : scene
+    ));
+  };
+
   const handleSelectProject = (project: Project) => {
     setSelectedProject(project);
     setActiveView('home');
@@ -141,6 +147,7 @@ const Index = () => {
                 deleteScene={deleteScene}
                 deleteChapter={deleteChapter}
                 deletePlotLine={deletePlotLine}
+                updateScene={updateScene}
               />
             )}
 
